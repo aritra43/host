@@ -1,5 +1,3 @@
 crewai
 crewai_tools
 streamlit
-pydantic
-prompt_toolkit
