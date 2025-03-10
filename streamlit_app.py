@@ -14,7 +14,15 @@ except ImportError:
     sys.modules["sqlite3"] = pysqlite3
 
 from crewai import Agent, LLM, Crew, Process, Task
-from crewai_tools import FileReadTool, FileWriteTool  # Corrected import
+try:
+    from crewai_tools.file_read_tool import FileReadTool
+    from crewai_tools.file_write_tool import FileWriteTool
+except ImportError:
+    print("crewai_tools module not found. Please ensure it is installed correctly.")
+    subprocess.run(["pip", "install", "crewai_tools"])
+    from crewai_tools.file_read_tool import FileReadTool
+    from crewai_tools.file_write_tool import FileWriteTool
+
 from dotenv import load_dotenv
 import streamlit as st
 import openai
