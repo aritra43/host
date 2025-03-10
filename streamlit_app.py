@@ -18,8 +18,8 @@ try:
     from crewai_tools import FileReadTool, FileWriteTool
 except ImportError:
     print("crewai_tools module not found. Installing now...")
-    subprocess.run(["pip", "install", "crewai[tools]"])
-    from crewai[tools] import FileReadTool, FileWriterTool
+    subprocess.run(["pip", "install", "crewai_tools"])
+    from crewai_tools import FileReadTool, FileWriterTool
 
 from dotenv import load_dotenv
 import streamlit as st
