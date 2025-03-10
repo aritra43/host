@@ -13,7 +13,7 @@ except ImportError:
 
 from crewai import Agent, LLM, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
-from crewai_tools import FileReadTool, FileWriterTool
+from crewai_tools import FileReadTool
 from dotenv import load_dotenv
 import streamlit as st
 import os
