@@ -1,23 +1,22 @@
 import numpy as np
 np.float_ = np.float64  # Patch np.float_ to avoid errors
 import sys
+import os
+import subprocess
+
 try:
     import pysqlite3
     sys.modules["sqlite3"] = pysqlite3  # Override default sqlite3 with pysqlite3
 except ImportError:
     print("pysqlite3 not installed. Installing now...")
-    import subprocess
     subprocess.run(["pip", "install", "pysqlite3-binary"])
     import pysqlite3
     sys.modules["sqlite3"] = pysqlite3
 
 from crewai import Agent, LLM, Crew, Process, Task
-from crewai.project import CrewBase, agent, crew, task
-from crewai_tools import FileReadTool
+from crewai_tools.file_tools import FileReadTool, FileWriterTool  # Updated import
 from dotenv import load_dotenv
 import streamlit as st
-import os
-import litellm
 import openai
 import chromadb
 
@@ -50,6 +49,7 @@ def generate_content(topic, uploaded_file):
             f.write(uploaded_file.getbuffer())
 
         file_read_tool = FileReadTool(file_path=temp_file_path)
+        file_writer_tool = FileWriterTool()
 
         researcher = Agent(
             role='Senior Data Researcher',
@@ -68,7 +68,7 @@ def generate_content(topic, uploaded_file):
             verbose=True,
             memory=True,
             allow_delegation=True,
-            tools=[file_read_tool, FileWriterTool()]
+            tools=[file_read_tool, file_writer_tool]
         )
 
         research_task = Task(
