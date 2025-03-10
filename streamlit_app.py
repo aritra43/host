@@ -3,7 +3,6 @@ np.float_ = np.float64  # Patch np.float_ to avoid errors
 import sys
 import os
 import subprocess
-import crewai_tools
 
 try:
     import pysqlite3
@@ -15,12 +14,9 @@ except ImportError:
     sys.modules["sqlite3"] = pysqlite3
 
 from crewai import Agent, LLM, Crew, Process, Task
-try:
-    from crewai_tools import FileReadTool, FileWriteTool
-except ImportError:
-    print("crewai_tools module not found. Installing now...")
-    subprocess.run(["pip", "install", "crewai_tools"])
-    from crewai_tools import FileReadTool, FileWriterTool
+
+import crewai_tools
+from crewai_tools import FileReadTool, FileWriteTool
 
 from dotenv import load_dotenv
 import streamlit as st
