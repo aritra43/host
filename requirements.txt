@@ -25,7 +25,7 @@ cohere
 colorama
 coloredlogs
 crewai
-crewai-tools
+crewai_tools
 cryptography
 dataclasses-json
 decorator
