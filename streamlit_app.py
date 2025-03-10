@@ -15,8 +15,12 @@ except ImportError:
 
 from crewai import Agent, LLM, Crew, Process, Task
 
-import crewai_tools
-from crewai_tools import FileReadTool, FileWriteTool
+from crewai_tools import FileReadTool
+file_read_tool = FileReadTool()
+from crewai_tools import FileWriterTool
+
+# Initialize the tool
+
 
 from dotenv import load_dotenv
 import streamlit as st
@@ -52,7 +56,7 @@ def generate_content(topic, uploaded_file):
             f.write(uploaded_file.getbuffer())
 
         file_read_tool = FileReadTool(file_path=temp_file_path)
-        file_write_tool = FileWriteTool()
+        file_writer_tool = FileWriterTool()
 
         researcher = Agent(
             role='Senior Data Researcher',
@@ -71,7 +75,7 @@ def generate_content(topic, uploaded_file):
             verbose=True,
             memory=True,
             allow_delegation=True,
-            tools=[file_read_tool, file_write_tool]
+            tools=[file_read_tool, file_writer_tool]
         )
 
         research_task = Task(
