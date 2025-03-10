@@ -3,6 +3,7 @@ np.float_ = np.float64  # Patch np.float_ to avoid errors
 import sys
 import os
 import subprocess
+import crewai_tools
 
 try:
     import pysqlite3
