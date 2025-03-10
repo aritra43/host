@@ -1,3 +1,7 @@
-crewai 
+crewai
 crewai_tools
-python-dotenv
+dotenv
+litellm
+openai
+os
+streamlit
