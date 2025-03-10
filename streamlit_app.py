@@ -15,13 +15,11 @@ except ImportError:
 
 from crewai import Agent, LLM, Crew, Process, Task
 try:
-    from crewai_tools.file_read_tool import FileReadTool
-    from crewai_tools.file_write_tool import FileWriteTool
+    from crewai_tools import FileReadTool, FileWriteTool
 except ImportError:
-    print("crewai_tools module not found. Please ensure it is installed correctly.")
-    subprocess.run(["pip", "install", "crewai_tools"])
-    from crewai_tools.file_read_tool import FileReadTool
-    from crewai_tools.file_write_tool import FileWriteTool
+    print("crewai_tools module not found. Installing now...")
+    subprocess.run(["pip", "install", "crewai[tools]"])
+    from crewai[tools] import FileReadTool, FileWriterTool
 
 from dotenv import load_dotenv
 import streamlit as st
