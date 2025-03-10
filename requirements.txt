@@ -1,6 +1,5 @@
 aiohappyeyeballs
 aiohttp
-aio-signal
 alembic
 altair
 annotated-types
