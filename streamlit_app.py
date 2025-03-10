@@ -14,7 +14,7 @@ except ImportError:
     sys.modules["sqlite3"] = pysqlite3
 
 from crewai import Agent, LLM, Crew, Process, Task
-from crewai_tools.file_tools import FileReadTool, FileWriterTool  # Updated import
+from crewai_tools import FileReadTool, FileWriteTool  # Corrected import
 from dotenv import load_dotenv
 import streamlit as st
 import openai
@@ -49,7 +49,7 @@ def generate_content(topic, uploaded_file):
             f.write(uploaded_file.getbuffer())
 
         file_read_tool = FileReadTool(file_path=temp_file_path)
-        file_writer_tool = FileWriterTool()
+        file_write_tool = FileWriteTool()
 
         researcher = Agent(
             role='Senior Data Researcher',
@@ -68,7 +68,7 @@ def generate_content(topic, uploaded_file):
             verbose=True,
             memory=True,
             allow_delegation=True,
-            tools=[file_read_tool, file_writer_tool]
+            tools=[file_read_tool, file_write_tool]
         )
 
         research_task = Task(
