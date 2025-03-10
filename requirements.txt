@@ -1,4 +1,5 @@
-crewai
+chromadb==0.4.24
+crewai==0.19.2
 crewai_tools
 dotenv
 litellm
