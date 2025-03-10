@@ -1,6 +1,6 @@
+pysqlite3-binary
 chromadb
 crewai
-sqlite3 >= 3.35.0
 streamlit
 openai
 litellm
