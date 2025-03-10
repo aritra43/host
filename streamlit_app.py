@@ -1,5 +1,15 @@
 import numpy as np
 np.float_ = np.float64  # Patch np.float_ to avoid errors
+import sys
+try:
+    import pysqlite3
+    sys.modules["sqlite3"] = pysqlite3  # Override default sqlite3 with pysqlite3
+except ImportError:
+    print("pysqlite3 not installed. Installing now...")
+    import subprocess
+    subprocess.run(["pip", "install", "pysqlite3-binary"])
+    import pysqlite3
+    sys.modules["sqlite3"] = pysqlite3
 
 from crewai import Agent, LLM, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
