@@ -30,7 +30,7 @@ with st.sidebar:
         if file_content:
             st.session_state["file_content"] = file_content
         else:
-            st.error("The uploaded file is empty. Please upload a valid file.")
+            st.error("❌ The uploaded file is empty. Please upload a valid file.")
 
     st.markdown("-----")
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
@@ -43,7 +43,7 @@ def generate_content(topic):
         st.error("❌ Unable to create the report. File content not provided.")
         return None, None
 
-    # ✅ Pass content to Agents instead of Tasks
+    # ✅ Pass content as an explicit input to kickoff()
     researcher = Agent(
         role="Senior Data Researcher",
         goal=f"Extract key information on {topic}",
@@ -52,8 +52,7 @@ def generate_content(topic):
         verbose=True,
         memory=True,
         tools=[],  # No external tools needed
-        allow_delegation=True,
-        context=f"The document contains information on {topic}. Here is the full content:\n\n{content}"  # ✅ Content passed to the Agent
+        allow_delegation=True
     )
 
     reporting_analyst = Agent(
@@ -64,20 +63,19 @@ def generate_content(topic):
         verbose=True,
         memory=True,
         tools=[],  # No external tools needed
-        allow_delegation=True,
-        context=f"Use the extracted information to create a detailed report on {topic}. Here is the full content:\n\n{content}"  # ✅ Content passed to the Agent
+        allow_delegation=True
     )
 
     research_task = Task(
         description=f"Analyze and summarize key information about {topic}.",
         expected_output=f"A structured summary of {topic}.",
-        agent=researcher  # ✅ Content is already in Agent context
+        agent=researcher
     )
 
     reporting_task = Task(
         description=f"Compile and format extracted data into a structured report.",
         expected_output=f"A detailed markdown report on {topic}.",
-        agent=reporting_analyst  # ✅ Content is already in Agent context
+        agent=reporting_analyst
     )
 
     crew = Crew(
@@ -89,7 +87,7 @@ def generate_content(topic):
 
     try:
         st.write("⏳ Processing... Please wait.")
-        result = crew.kickoff()  # No need for `inputs` here; content is inside Agents
+        result = crew.kickoff(inputs={"topic": topic, "content": content})  # ✅ Explicitly passing content
 
         if not result:
             raise ValueError("CrewAI returned an empty response.")
@@ -120,6 +118,7 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
