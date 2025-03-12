@@ -81,18 +81,14 @@ def generate_content(topic):
     if not content:
         return None, None
 
-    # ✅ Define a function to act as a tool (passing content to agents)
-    def file_content_tool():
-        return content
-
     researcher = Agent(
         role="Senior Data Researcher",
         goal=f"Uncover cutting-edge developments in {topic}",
-        description=f"Analyze the file content and extract information related to {topic}.",
+        description=f"Analyze the provided file content and extract key information related to {topic}.",
         backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
         verbose=True,
         memory=True,
-        tools=[file_content_tool],  # ✅ Pass the function directly as a tool
+        tools=[],  # No need for an external tool; we'll pass content directly
         allow_delegation=True
     )
 
@@ -103,18 +99,18 @@ def generate_content(topic):
         backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
         verbose=True,
         memory=True,
-        tools=[file_content_tool],  # ✅ Pass the function directly as a tool
+        tools=[],  # No need for an external tool; we'll pass content directly
         allow_delegation=True
     )
 
     research_task = Task(
-        description=f"Analyze and extract key information about {topic}.",
+        description=f"Analyze and extract key information about {topic} from the provided content.",
         expected_output=f"A structured dataset of extracted information on {topic}.",
         agent=researcher
     )
 
     reporting_task = Task(
-        description=f"Compile and format extracted data into a report.",
+        description=f"Compile and format extracted data into a structured report on {topic}.",
         expected_output=f"A well-organized markdown report on {topic}.",
         agent=reporting_analyst
     )
@@ -129,7 +125,7 @@ def generate_content(topic):
     try:
         print(f"Passing to CrewAI: topic={topic}, content_length={len(content)}")
 
-        result = crew.kickoff(inputs={"topic": topic})
+        result = crew.kickoff(inputs={"topic": topic, "content": content})  # ✅ Pass content directly
 
         if not result:
             raise ValueError("CrewAI returned an empty response.")
@@ -162,6 +158,7 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
