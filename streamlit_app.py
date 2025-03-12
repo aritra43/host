@@ -1,118 +1,77 @@
-import numpy as np
-np.float_ = np.float64  # Patch np.float_ to avoid errors
-import sys
 import os
-import subprocess
-
-# Ensure pysqlite3 is installed
-try:
-    import pysqlite3
-    sys.modules["sqlite3"] = pysqlite3  # Override default sqlite3 with pysqlite3
-except ImportError:
-    print("pysqlite3 not installed. Installing now...")
-    subprocess.run(["pip", "install", "pysqlite3-binary"])
-    import pysqlite3
-    sys.modules["sqlite3"] = pysqlite3
-
-from crewai import Agent, Crew, Process, Task
-from dotenv import load_dotenv
 import streamlit as st
-import openai
-import chromadb
+from crewai import Agent, Crew, Task, Process
+from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
 # Streamlit Page Configuration
-st.set_page_config(page_title="EducatorAI", layout="wide")
+st.set_page_config(page_title="AI Educator", layout="wide")
 
 # Title and description
 st.title("AI Educator Powered By CrewAI")
-st.markdown("Please provide a text file only")
+st.markdown("Please provide a text file only.")
 
-# Initialize session state for file persistence
-if "file_path" not in st.session_state:
-    st.session_state["file_path"] = None
+# Initialize session state
+if "file_content" not in st.session_state:
+    st.session_state["file_content"] = None
 
 # Sidebar
 with st.sidebar:
     st.header("Content Settings")
     topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
 
-    uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
+    uploaded_file = st.file_uploader("Choose a file", type=["txt"])
 
     if uploaded_file is not None:
-        os.makedirs("temp", exist_ok=True)
-        temp_file_path = os.path.join("temp", uploaded_file.name)
-
-        with open(temp_file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        st.session_state["file_path"] = temp_file_path
+        st.session_state["file_content"] = uploaded_file.getvalue().decode("utf-8").strip()
 
     st.markdown("-----")
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
 
-# Function to read file content
-def read_file_content():
-    """
-    Reads the uploaded file content and returns it as a string.
-    """
-    file_path = st.session_state.get("file_path", None)
-
-    if not file_path or not os.path.exists(file_path):
-        st.error("No file provided. Please upload a file again.")
-        return None
-
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read().strip()
-        if not content:
-            raise ValueError("File is empty.")
-        return content
-    except Exception as e:
-        st.error(f"Error reading the file: {str(e)}")
-        return None
-
 # Function to generate content using CrewAI
 def generate_content(topic):
-    content = read_file_content()
+    content = st.session_state.get("file_content", None)
 
     if not content:
+        st.error("Unable to create the report. File content not provided.")
         return None, None
 
     researcher = Agent(
         role="Senior Data Researcher",
-        goal=f"Uncover cutting-edge developments in {topic}",
-        description=f"Analyze the provided file content and extract key information related to {topic}.",
-        backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
+        goal=f"Extract key information on {topic}",
+        description="Analyze file content and extract relevant data.",
+        backstory="A skilled researcher specializing in text analysis.",
         verbose=True,
         memory=True,
-        tools=[],  # No need for an external tool; we'll pass content directly
+        tools=[],  # No external tools needed
         allow_delegation=True
     )
 
     reporting_analyst = Agent(
         role="Reporting Analyst",
-        goal=f"Create detailed reports based on {topic} research findings",
-        description="Write and format the extracted content into a structured report.",
-        backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
+        goal=f"Create a structured report on {topic}",
+        description="Format the extracted information into a structured document.",
+        backstory="An expert in compiling detailed reports.",
         verbose=True,
         memory=True,
-        tools=[],  # No need for an external tool; we'll pass content directly
+        tools=[],  # No external tools needed
         allow_delegation=True
     )
 
     research_task = Task(
-        description=f"Analyze and extract key information about {topic} from the provided content.",
-        expected_output=f"A structured dataset of extracted information on {topic}.",
-        agent=researcher
+        description=f"Analyze the provided content and extract key points about {topic}.",
+        expected_output=f"A structured summary of {topic}.",
+        agent=researcher,
+        inputs={"content": content}  # ✅ Explicitly pass content to the task
     )
 
     reporting_task = Task(
-        description=f"Compile and format extracted data into a structured report on {topic}.",
-        expected_output=f"A well-organized markdown report on {topic}.",
-        agent=reporting_analyst
+        description=f"Compile and format extracted data into a professional report.",
+        expected_output=f"A detailed markdown report on {topic}.",
+        agent=reporting_analyst,
+        inputs={"content": content}  # ✅ Explicitly pass content to the task
     )
 
     crew = Crew(
@@ -123,15 +82,15 @@ def generate_content(topic):
     )
 
     try:
-        print(f"Passing to CrewAI: topic={topic}, content_length={len(content)}")
-
-        result = crew.kickoff(inputs={"topic": topic, "content": content})  # ✅ Pass content directly
+        st.write("Processing... Please wait.")
+        result = crew.kickoff()  # No need for `inputs` here; tasks already receive content
 
         if not result:
             raise ValueError("CrewAI returned an empty response.")
 
         result_text = str(result)
         output_file_path = os.path.join("temp", "report.txt")
+        os.makedirs("temp", exist_ok=True)
 
         with open(output_file_path, "w", encoding="utf-8") as f:
             f.write(result_text)
@@ -144,20 +103,18 @@ def generate_content(topic):
 # Main Content Area
 if generate_button:
     with st.spinner("Generating Content...This may take a moment..."):
-        try:
-            result, output_file_path = generate_content(topic)
-            if result:
-                st.markdown("### Generated Content")
-                st.markdown(result)
+        result, output_file_path = generate_content(topic)
+        if result:
+            st.markdown("### Generated Content")
+            st.markdown(result)
 
-                with open(output_file_path, "rb") as f:
-                    st.download_button(label="Download Content", data=f.read(), file_name="article.txt", mime="text/plain")
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            with open(output_file_path, "rb") as f:
+                st.download_button(label="Download Report", data=f.read(), file_name="report.txt", mime="text/plain")
 
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
