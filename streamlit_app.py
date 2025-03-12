@@ -52,7 +52,9 @@ def read_file_content(uploaded_file):
         # Read file content
         try:
             with open(temp_file_path, "r", encoding="utf-8") as f:
-                content = f.read()
+                content = f.read().strip()  # ✅ Strip to remove empty spaces
+            if not content:
+                raise ValueError("File is empty.")
             return content, temp_file_path
         except Exception as e:
             st.error(f"Error reading file: {str(e)}")
@@ -113,6 +115,9 @@ def generate_content(topic, uploaded_file):
     try:
         result = crew.kickoff(inputs={"topic": topic, "content": content})
 
+        if not result:
+            raise ValueError("CrewAI returned an empty response.")
+
         # Convert CrewOutput to string
         result_text = str(result)
 
@@ -144,5 +149,6 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
