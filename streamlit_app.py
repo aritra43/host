@@ -36,14 +36,12 @@ with st.sidebar:
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
 
 # Function to generate content using CrewAI
-def generate_content(topic):
-    content = st.session_state.get("file_content", None)
-
+def generate_content(topic, content):
     if not content:
         st.error("❌ Unable to create the report. File content not provided.")
         return None, None
 
-    # ✅ Pass content as an explicit input to kickoff()
+    # ✅ Pass content as an explicit input to Agents
     researcher = Agent(
         role="Senior Data Researcher",
         goal=f"Extract key information on {topic}",
@@ -51,7 +49,7 @@ def generate_content(topic):
         backstory="A skilled researcher specializing in text analysis.",
         verbose=True,
         memory=True,
-        tools=[],  # No external tools needed
+        context={"content": content},  # ✅ Pass content inside the Agent's context
         allow_delegation=True
     )
 
@@ -62,7 +60,7 @@ def generate_content(topic):
         backstory="An expert in compiling detailed reports.",
         verbose=True,
         memory=True,
-        tools=[],  # No external tools needed
+        context={"content": content},  # ✅ Pass content inside the Agent's context
         allow_delegation=True
     )
 
@@ -87,7 +85,7 @@ def generate_content(topic):
 
     try:
         st.write("⏳ Processing... Please wait.")
-        result = crew.kickoff(inputs={"topic": topic, "content": content})  # ✅ Explicitly passing content
+        result = crew.kickoff(inputs={"topic": topic})  # ✅ No need for content here since it's in the Agents' context
 
         if not result:
             raise ValueError("CrewAI returned an empty response.")
@@ -106,8 +104,9 @@ def generate_content(topic):
 
 # Main Content Area
 if generate_button:
+    file_content = st.session_state.get("file_content", None)
     with st.spinner("🚀 Generating Content...This may take a moment..."):
-        result, output_file_path = generate_content(topic)
+        result, output_file_path = generate_content(topic, file_content)
         if result:
             st.markdown("### 📄 Generated Content")
             st.markdown(result)
@@ -118,6 +117,7 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
