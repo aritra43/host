@@ -25,7 +25,12 @@ with st.sidebar:
     uploaded_file = st.file_uploader("Choose a file", type=["txt"])
 
     if uploaded_file is not None:
-        st.session_state["file_content"] = uploaded_file.getvalue().decode("utf-8").strip()
+        # ✅ Read file content properly and store in session state
+        file_content = uploaded_file.getvalue().decode("utf-8").strip()
+        if file_content:
+            st.session_state["file_content"] = file_content
+        else:
+            st.error("The uploaded file is empty. Please upload a valid file.")
 
     st.markdown("-----")
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
@@ -35,9 +40,10 @@ def generate_content(topic):
     content = st.session_state.get("file_content", None)
 
     if not content:
-        st.error("Unable to create the report. File content not provided.")
+        st.error("❌ Unable to create the report. File content not provided.")
         return None, None
 
+    # ✅ Pass content to Agents instead of Tasks
     researcher = Agent(
         role="Senior Data Researcher",
         goal=f"Extract key information on {topic}",
@@ -46,7 +52,8 @@ def generate_content(topic):
         verbose=True,
         memory=True,
         tools=[],  # No external tools needed
-        allow_delegation=True
+        allow_delegation=True,
+        context=f"The document contains information on {topic}. Here is the full content:\n\n{content}"  # ✅ Content passed to the Agent
     )
 
     reporting_analyst = Agent(
@@ -57,21 +64,20 @@ def generate_content(topic):
         verbose=True,
         memory=True,
         tools=[],  # No external tools needed
-        allow_delegation=True
+        allow_delegation=True,
+        context=f"Use the extracted information to create a detailed report on {topic}. Here is the full content:\n\n{content}"  # ✅ Content passed to the Agent
     )
 
     research_task = Task(
-        description=f"Analyze the provided content and extract key points about {topic}.",
+        description=f"Analyze and summarize key information about {topic}.",
         expected_output=f"A structured summary of {topic}.",
-        agent=researcher,
-        inputs={"content": content}  # ✅ Explicitly pass content to the task
+        agent=researcher  # ✅ Content is already in Agent context
     )
 
     reporting_task = Task(
-        description=f"Compile and format extracted data into a professional report.",
+        description=f"Compile and format extracted data into a structured report.",
         expected_output=f"A detailed markdown report on {topic}.",
-        agent=reporting_analyst,
-        inputs={"content": content}  # ✅ Explicitly pass content to the task
+        agent=reporting_analyst  # ✅ Content is already in Agent context
     )
 
     crew = Crew(
@@ -82,8 +88,8 @@ def generate_content(topic):
     )
 
     try:
-        st.write("Processing... Please wait.")
-        result = crew.kickoff()  # No need for `inputs` here; tasks already receive content
+        st.write("⏳ Processing... Please wait.")
+        result = crew.kickoff()  # No need for `inputs` here; content is inside Agents
 
         if not result:
             raise ValueError("CrewAI returned an empty response.")
@@ -97,23 +103,24 @@ def generate_content(topic):
 
         return result_text, output_file_path
     except Exception as e:
-        st.error(f"Error during content generation: {str(e)}")
+        st.error(f"❌ Error during content generation: {str(e)}")
         return None, None
 
 # Main Content Area
 if generate_button:
-    with st.spinner("Generating Content...This may take a moment..."):
+    with st.spinner("🚀 Generating Content...This may take a moment..."):
         result, output_file_path = generate_content(topic)
         if result:
-            st.markdown("### Generated Content")
+            st.markdown("### 📄 Generated Content")
             st.markdown(result)
 
             with open(output_file_path, "rb") as f:
-                st.download_button(label="Download Report", data=f.read(), file_name="report.txt", mime="text/plain")
+                st.download_button(label="📥 Download Report", data=f.read(), file_name="report.txt", mime="text/plain")
 
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
