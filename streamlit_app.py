@@ -14,7 +14,7 @@ except ImportError:
     import pysqlite3
     sys.modules["sqlite3"] = pysqlite3
 
-from crewai import Agent, LLM, Crew, Process, Task
+from crewai import Agent, Crew, Process, Task
 from dotenv import load_dotenv
 import streamlit as st
 import openai
@@ -61,18 +61,20 @@ def generate_content(topic, uploaded_file):
 
     if content:
         researcher = Agent(
-            role='Senior Data Researcher',
-            goal=f'Uncover cutting-edge developments in {topic}',
-            description=f'Analyze the file content and extract information related to {topic}.',
+            role="Senior Data Researcher",
+            goal=f"Uncover cutting-edge developments in {topic}",
+            description=f"Analyze the file content and extract information related to {topic}.",
+            backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
             verbose=True,
             memory=True,
             allow_delegation=True
         )
 
         reporting_analyst = Agent(
-            role='Reporting Analyst',
-            goal=f'Create detailed reports based on {topic} research findings',
-            description=f'Write and format the extracted content into a structured report.',
+            role="Reporting Analyst",
+            goal=f"Create detailed reports based on {topic} research findings",
+            description="Write and format the extracted content into a structured report.",
+            backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
             verbose=True,
             memory=True,
             allow_delegation=True
@@ -126,3 +128,4 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
