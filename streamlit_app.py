@@ -135,9 +135,19 @@ def generate_content(topic, uploaded_file):
 
 # Main Content Area
 if generate_button:
-    with st.spinner("Generating Content...Th
+    with st.spinner("Generating Content...This may take a moment..."):
+        try:
+            result, output_file_path = generate_content(topic, uploaded_file)
+            if result:
+                st.markdown("### Generated Content")
+                st.markdown(result)
+                
+                # Allow user to download the generated content
+                with open(output_file_path, "rb") as f:
+                    st.download_button(label="Download Content", data=f.read(), file_name="article.txt", mime="text/plain")
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
 
-
-
-
-
+# Footer
+st.markdown("----")
+st.markdown("Built by AritraM")
