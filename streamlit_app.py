@@ -3,10 +3,23 @@ np.float_ = np.float64  # Patch np.float_ to avoid errors
 import sys
 import os
 import subprocess
-import streamlit as st
-from dotenv import load_dotenv
+
+# Ensure pysqlite3 is installed
+try:
+    import pysqlite3
+    sys.modules["sqlite3"] = pysqlite3  # Override default sqlite3 with pysqlite3
+except ImportError:
+    print("pysqlite3 not installed. Installing now...")
+    subprocess.run(["pip", "install", "pysqlite3-binary"])
+    import pysqlite3
+    sys.modules["sqlite3"] = pysqlite3
+
 from crewai import Agent, Crew, Process, Task
-from crewawi_tools import Tool
+from crewai.tools import Tool  # ✅ Corrected import
+from dotenv import load_dotenv
+import streamlit as st
+import openai
+import chromadb
 
 # Load environment variables
 load_dotenv()
@@ -26,13 +39,13 @@ if "file_path" not in st.session_state:
 with st.sidebar:
     st.header("Content Settings")
     topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
-    
+
     uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
-    
+
     if uploaded_file is not None:
         os.makedirs("temp", exist_ok=True)
         temp_file_path = os.path.join("temp", uploaded_file.name)
-        
+
         with open(temp_file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
@@ -41,7 +54,7 @@ with st.sidebar:
     st.markdown("-----")
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
 
-# ✅ Function to read file content
+# Function to read file content
 def read_file_content():
     file_path = st.session_state.get("file_path", None)
 
@@ -71,14 +84,13 @@ content_tool = Tool(
     function=content_extractor
 )
 
-# ✅ Function to generate content using CrewAI
+# Function to generate content using CrewAI
 def generate_content(topic):
     content = read_file_content()
 
     if not content:
         return None, None
 
-    # ✅ Define Agents
     researcher = Agent(
         role="Senior Data Researcher",
         goal=f"Uncover cutting-edge developments in {topic}",
@@ -101,7 +113,6 @@ def generate_content(topic):
         allow_delegation=True
     )
 
-    # ✅ Define Tasks
     research_task = Task(
         description=f"Analyze and extract key information about {topic}.",
         expected_output=f"A structured dataset of extracted information on {topic}.",
@@ -114,7 +125,6 @@ def generate_content(topic):
         agent=reporting_analyst
     )
 
-    # ✅ Initialize Crew with Agents & Tasks
     crew = Crew(
         agents=[researcher, reporting_analyst],
         tasks=[research_task, reporting_task],
@@ -125,7 +135,6 @@ def generate_content(topic):
     try:
         print(f"Passing to CrewAI: topic={topic}, content_length={len(content)}")
 
-        # ✅ Pass only `topic` since agents fetch content from the tool
         result = crew.kickoff(inputs={"topic": topic})
 
         if not result:
@@ -142,7 +151,7 @@ def generate_content(topic):
         st.error(f"Error during content generation: {str(e)}")
         return None, None
 
-# ✅ Main Content Area
+# Main Content Area
 if generate_button:
     with st.spinner("Generating Content...This may take a moment..."):
         try:
@@ -150,7 +159,7 @@ if generate_button:
             if result:
                 st.markdown("### Generated Content")
                 st.markdown(result)
-                
+
                 with open(output_file_path, "rb") as f:
                     st.download_button(label="Download Content", data=f.read(), file_name="article.txt", mime="text/plain")
         except Exception as e:
@@ -159,7 +168,7 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
-("Built by AritraM")
+
 
 
 
