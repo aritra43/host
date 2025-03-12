@@ -39,18 +39,15 @@ with st.sidebar:
     st.header("Content Settings")
     topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
     
-    # Upload file and store it in session state
     uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
     
     if uploaded_file is not None:
         os.makedirs("temp", exist_ok=True)
         temp_file_path = os.path.join("temp", uploaded_file.name)
         
-        # Save file
         with open(temp_file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # Store path in session state
         st.session_state["file_path"] = temp_file_path
 
     st.markdown("-----")
@@ -156,5 +153,6 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
