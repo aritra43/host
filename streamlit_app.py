@@ -6,7 +6,8 @@ import subprocess
 import streamlit as st
 from dotenv import load_dotenv
 from crewai import Agent, Crew, Process, Task
-from crewai_tools import Tool  # ✅ Import Tool to define a valid tool
+from crewai.tools import Tool
+
 
 # Load environment variables
 load_dotenv()
