@@ -62,5 +62,73 @@ def generate_content(topic, uploaded_file):
     if content:
         researcher = Agent(
             role="Senior Data Researcher",
+            goal=f"Uncover cutting-edge developments in {topic}",
+            description=f"Analyze the file content and extract information related to {topic}.",
+            backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
+            verbose=True,
+            memory=True,
+            allow_delegation=True
+        )  # ✅ Parenthesis closed correctly
 
+        reporting_analyst = Agent(
+            role="Reporting Analyst",
+            goal=f"Create detailed reports based on {topic} research findings",
+            description="Write and format the extracted content into a structured report.",
+            backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
+            verbose=True,
+            memory=True,
+            allow_delegation=True
+        )  # ✅ Parenthesis closed correctly
 
+        research_task = Task(
+            description=f"Analyze and extract key information about {topic}.",
+            expected_output=f"A structured dataset of extracted information on {topic}.",
+            agent=researcher
+        )  # ✅ Parenthesis closed correctly
+
+        reporting_task = Task(
+            description=f"Compile and format extracted data into a report.",
+            expected_output=f"A well-organized markdown report on {topic}.",
+            agent=reporting_analyst
+        )  # ✅ Parenthesis closed correctly
+
+        crew = Crew(
+            agents=[researcher, reporting_analyst],
+            tasks=[research_task, reporting_task],
+            process=Process.sequential,
+            verbose=True
+        )  # ✅ Parenthesis closed correctly
+
+        result = crew.kickoff(inputs={"topic": topic, "content": content})
+
+        # Convert CrewOutput to string
+        result_text = str(result)
+
+        # Save output to a file
+        output_file_path = os.path.join("temp", "report.txt")
+        with open(output_file_path, "w", encoding="utf-8") as f:
+            f.write(result_text)
+
+        return result_text, output_file_path
+    else:
+        st.error("Please upload a file to proceed.")
+        return None, None
+
+# Main Content Area
+if generate_button:
+    with st.spinner("Generating Content...This may take a moment..."):
+        try:
+            result, output_file_path = generate_content(topic, uploaded_file)
+            if result:
+                st.markdown("### Generated Content")
+                st.markdown(result)
+                
+                # Allow user to download the generated content
+                with open(output_file_path, "rb") as f:
+                    st.download_button(label="Download Content", data=f.read(), file_name="article.txt", mime="text/plain")
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+
+# Footer
+st.markdown("----")
+st.markdown("Built by AritraM")
