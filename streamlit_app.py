@@ -15,7 +15,6 @@ except ImportError:
     sys.modules["sqlite3"] = pysqlite3
 
 from crewai import Agent, Crew, Process, Task
-from crewai.tools import Tool  # ✅ Corrected import
 from dotenv import load_dotenv
 import streamlit as st
 import openai
@@ -56,6 +55,9 @@ with st.sidebar:
 
 # Function to read file content
 def read_file_content():
+    """
+    Reads the uploaded file content and returns it as a string.
+    """
     file_path = st.session_state.get("file_path", None)
 
     if not file_path or not os.path.exists(file_path):
@@ -72,24 +74,16 @@ def read_file_content():
         st.error(f"Error reading the file: {str(e)}")
         return None
 
-# ✅ Define a tool for reading content
-def content_extractor():
-    content = read_file_content()
-    return content if content else "No content available"
-
-# ✅ Define a valid CrewAI Tool
-content_tool = Tool(
-    name="File Content Extractor",
-    description="Extracts content from the uploaded file",
-    function=content_extractor
-)
-
 # Function to generate content using CrewAI
 def generate_content(topic):
     content = read_file_content()
 
     if not content:
         return None, None
+
+    # ✅ Define a function to act as a tool (passing content to agents)
+    def file_content_tool():
+        return content
 
     researcher = Agent(
         role="Senior Data Researcher",
@@ -98,7 +92,7 @@ def generate_content(topic):
         backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
         verbose=True,
         memory=True,
-        tools=[content_tool],  # ✅ Pass the tool here
+        tools=[file_content_tool],  # ✅ Pass the function directly as a tool
         allow_delegation=True
     )
 
@@ -109,7 +103,7 @@ def generate_content(topic):
         backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
         verbose=True,
         memory=True,
-        tools=[content_tool],  # ✅ Pass the tool here
+        tools=[file_content_tool],  # ✅ Pass the function directly as a tool
         allow_delegation=True
     )
 
@@ -168,6 +162,7 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
