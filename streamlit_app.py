@@ -36,7 +36,7 @@ with st.sidebar:
     topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
     uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
     st.markdown("-----")
-    generate_button = st.button("Generate Content", type="primary", use_container_width="True")
+    generate_button = st.button("Generate Content", type="primary", use_container_width=True)  # ✅ Fixed issue
 
 # Function to read file content
 def read_file_content(uploaded_file):
@@ -144,4 +144,5 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
