@@ -36,7 +36,7 @@ with st.sidebar:
     topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
     uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
     st.markdown("-----")
-    generate_button = st.button("Generate Content", type="primary", use_container_width=True)  # ✅ Fixed issue
+    generate_button = st.button("Generate Content", type="primary", use_container_width=True)
 
 # Function to read file content
 def read_file_content(uploaded_file):
@@ -80,7 +80,7 @@ def generate_content(topic, uploaded_file):
         backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
         verbose=True,
         memory=True,
-        tools=[content],
+        tools=[],  # ✅ FIXED: Removed invalid tools
         allow_delegation=True
     )
 
@@ -91,7 +91,7 @@ def generate_content(topic, uploaded_file):
         backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
         verbose=True,
         memory=True,
-        tools=[content],
+        tools=[],  # ✅ FIXED: Removed invalid tools
         allow_delegation=True
     )
 
@@ -135,22 +135,8 @@ def generate_content(topic, uploaded_file):
 
 # Main Content Area
 if generate_button:
-    with st.spinner("Generating Content...This may take a moment..."):
-        try:
-            result, output_file_path = generate_content(topic, uploaded_file)
-            if result:
-                st.markdown("### Generated Content")
-                st.markdown(result)
-                
-                # Allow user to download the generated content
-                with open(output_file_path, "rb") as f:
-                    st.download_button(label="Download Content", data=f.read(), file_name="article.txt", mime="text/plain")
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+    with st.spinner("Generating Content...Th
 
-# Footer
-st.markdown("----")
-st.markdown("Built by AritraM")
 
 
 
