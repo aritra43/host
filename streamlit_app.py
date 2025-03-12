@@ -36,7 +36,7 @@ with st.sidebar:
     topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
     uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
     st.markdown("-----")
-    generate_button = st.button("Generate Content", type="primary", use_container_width=True)
+    generate_button = st.button("Generate Content", type="primary", use_container_width=True")
 
 # Function to read file content
 def read_file_content(uploaded_file):
@@ -50,55 +50,67 @@ def read_file_content(uploaded_file):
             f.write(uploaded_file.getbuffer())
 
         # Read file content
-        with open(temp_file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        
-        return content, temp_file_path
+        try:
+            with open(temp_file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            return content, temp_file_path
+        except Exception as e:
+            st.error(f"Error reading file: {str(e)}")
+            return None, None
     return None, None
 
+# Function to generate content using CrewAI
 def generate_content(topic, uploaded_file):
+    if not uploaded_file:
+        st.error("No file uploaded. Please upload a valid file.")
+        return None, None
+
     content, file_path = read_file_content(uploaded_file)
 
-    if content:
-        researcher = Agent(
-            role="Senior Data Researcher",
-            goal=f"Uncover cutting-edge developments in {topic}",
-            description=f"Analyze the file content and extract information related to {topic}.",
-            backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
-            verbose=True,
-            memory=True,
-            allow_delegation=True
-        )  # ✅ Parenthesis closed correctly
+    if not content:
+        st.error("Uploaded file is empty or could not be read. Please upload a valid file.")
+        return None, None
 
-        reporting_analyst = Agent(
-            role="Reporting Analyst",
-            goal=f"Create detailed reports based on {topic} research findings",
-            description="Write and format the extracted content into a structured report.",
-            backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
-            verbose=True,
-            memory=True,
-            allow_delegation=True
-        )  # ✅ Parenthesis closed correctly
+    researcher = Agent(
+        role="Senior Data Researcher",
+        goal=f"Uncover cutting-edge developments in {topic}",
+        description=f"Analyze the file content and extract information related to {topic}.",
+        backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
+        verbose=True,
+        memory=True,
+        allow_delegation=True
+    )
 
-        research_task = Task(
-            description=f"Analyze and extract key information about {topic}.",
-            expected_output=f"A structured dataset of extracted information on {topic}.",
-            agent=researcher
-        )  # ✅ Parenthesis closed correctly
+    reporting_analyst = Agent(
+        role="Reporting Analyst",
+        goal=f"Create detailed reports based on {topic} research findings",
+        description="Write and format the extracted content into a structured report.",
+        backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
+        verbose=True,
+        memory=True,
+        allow_delegation=True
+    )
 
-        reporting_task = Task(
-            description=f"Compile and format extracted data into a report.",
-            expected_output=f"A well-organized markdown report on {topic}.",
-            agent=reporting_analyst
-        )  # ✅ Parenthesis closed correctly
+    research_task = Task(
+        description=f"Analyze and extract key information about {topic}.",
+        expected_output=f"A structured dataset of extracted information on {topic}.",
+        agent=researcher
+    )
 
-        crew = Crew(
-            agents=[researcher, reporting_analyst],
-            tasks=[research_task, reporting_task],
-            process=Process.sequential,
-            verbose=True
-        )  # ✅ Parenthesis closed correctly
+    reporting_task = Task(
+        description=f"Compile and format extracted data into a report.",
+        expected_output=f"A well-organized markdown report on {topic}.",
+        agent=reporting_analyst
+    )
 
+    crew = Crew(
+        agents=[researcher, reporting_analyst],
+        tasks=[research_task, reporting_task],
+        process=Process.sequential,
+        verbose=True
+    )
+
+    try:
         result = crew.kickoff(inputs={"topic": topic, "content": content})
 
         # Convert CrewOutput to string
@@ -110,8 +122,8 @@ def generate_content(topic, uploaded_file):
             f.write(result_text)
 
         return result_text, output_file_path
-    else:
-        st.error("Please upload a file to proceed.")
+    except Exception as e:
+        st.error(f"Error during content generation: {str(e)}")
         return None, None
 
 # Main Content Area
@@ -132,3 +144,4 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
