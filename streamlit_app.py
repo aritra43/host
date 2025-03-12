@@ -4,6 +4,7 @@ import sys
 import os
 import subprocess
 
+# Ensure pysqlite3 is installed
 try:
     import pysqlite3
     sys.modules["sqlite3"] = pysqlite3  # Override default sqlite3 with pysqlite3
@@ -14,14 +15,6 @@ except ImportError:
     sys.modules["sqlite3"] = pysqlite3
 
 from crewai import Agent, LLM, Crew, Process, Task
-
-from crewai_tools import FileReadTool
-file_read_tool = FileReadTool()
-from crewai_tools import FileWriterTool
-
-# Initialize the tool
-
-
 from dotenv import load_dotenv
 import streamlit as st
 import openai
@@ -45,7 +38,8 @@ with st.sidebar:
     st.markdown("-----")
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
 
-def generate_content(topic, uploaded_file):
+# Function to read file content
+def read_file_content(uploaded_file):
     if uploaded_file is not None:
         # Ensure temp directory exists
         os.makedirs("temp", exist_ok=True)
@@ -55,17 +49,24 @@ def generate_content(topic, uploaded_file):
         with open(temp_file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        file_read_tool = FileReadTool(file_path=temp_file_path)
-        file_writer_tool = FileWriterTool()
+        # Read file content
+        with open(temp_file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        return content, temp_file_path
+    return None, None
 
+def generate_content(topic, uploaded_file):
+    content, file_path = read_file_content(uploaded_file)
+
+    if content:
         researcher = Agent(
             role='Senior Data Researcher',
             goal=f'Uncover cutting-edge developments in {topic}',
-            description=f'Scrape the file to extract information related to {topic}.',
+            description=f'Analyze the file content and extract information related to {topic}.',
             verbose=True,
             memory=True,
-            allow_delegation=True,
-            tools=[file_read_tool]
+            allow_delegation=True
         )
 
         reporting_analyst = Agent(
@@ -74,12 +75,11 @@ def generate_content(topic, uploaded_file):
             description=f'Write and format the extracted content into a structured report.',
             verbose=True,
             memory=True,
-            allow_delegation=True,
-            tools=[file_read_tool, file_writer_tool]
+            allow_delegation=True
         )
 
         research_task = Task(
-            description=f"Scrape and extract key information about {topic}.",
+            description=f"Analyze and extract key information about {topic}.",
             expected_output=f"A structured dataset of extracted information on {topic}.",
             agent=researcher,
         )
@@ -87,8 +87,7 @@ def generate_content(topic, uploaded_file):
         reporting_task = Task(
             description=f"Compile and format extracted data into a report.",
             expected_output=f"A well-organized markdown report on {topic}.",
-            agent=reporting_analyst,
-            output_file='report.txt'
+            agent=reporting_analyst
         )
 
         crew = Crew(
@@ -98,20 +97,29 @@ def generate_content(topic, uploaded_file):
             verbose=True,
         )
 
-        return crew.kickoff(inputs={"topic": topic})
+        result = crew.kickoff(inputs={"topic": topic, "content": content})
+
+        # Save output to a file
+        output_file_path = os.path.join("temp", "report.txt")
+        with open(output_file_path, "w", encoding="utf-8") as f:
+            f.write(result)
+
+        return result, output_file_path
     else:
         st.error("Please upload a file to proceed.")
-        return None
+        return None, None
 
 # Main Content Area
 if generate_button:
     with st.spinner("Generating Content...This may take a moment..."):
         try:
-            result = generate_content(topic, uploaded_file)
+            result, output_file_path = generate_content(topic, uploaded_file)
             if result:
                 st.markdown("### Generated Content")
                 st.markdown(result)
-                st.download_button(label="Download Content", data=result.raw, file_name="article.txt", mime="text/plain")
+                
+                with open(output_file_path, "rb") as f:
+                    st.download_button(label="Download Content", data=f, file_name="article.txt", mime="text/plain")
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
 
