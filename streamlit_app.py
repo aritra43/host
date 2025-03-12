@@ -80,6 +80,7 @@ def generate_content(topic, uploaded_file):
         backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
         verbose=True,
         memory=True,
+        tools=[content],
         allow_delegation=True
     )
 
@@ -90,6 +91,7 @@ def generate_content(topic, uploaded_file):
         backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
         verbose=True,
         memory=True,
+        tools=[content],
         allow_delegation=True
     )
 
@@ -149,6 +151,7 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
