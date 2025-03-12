@@ -30,7 +30,7 @@ st.set_page_config(page_title="EducatorAI", layout="wide")
 st.title("AI Educator Powered By CrewAI")
 st.markdown("Please provide a text file only")
 
-# Initialize session state for file persistence
+# Ensure session state has file path
 if "file_path" not in st.session_state:
     st.session_state["file_path"] = None
 
@@ -48,7 +48,7 @@ with st.sidebar:
         with open(temp_file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        st.session_state["file_path"] = temp_file_path
+        st.session_state["file_path"] = temp_file_path  # Save the path in session state
 
     st.markdown("-----")
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
@@ -85,7 +85,7 @@ def generate_content(topic):
         backstory="A highly experienced data scientist with expertise in text extraction and knowledge mining.",
         verbose=True,
         memory=True,
-        tools=[],
+        tools=[read_file_content()],  # Ensure this is an empty list; content will be passed separately
         allow_delegation=True
     )
 
@@ -96,7 +96,7 @@ def generate_content(topic):
         backstory="A meticulous report analyst with years of experience in compiling structured data into detailed reports.",
         verbose=True,
         memory=True,
-        tools=[],
+        tools=[read_file_content()],  # Ensure tools is an empty list
         allow_delegation=True
     )
 
@@ -120,7 +120,8 @@ def generate_content(topic):
     )
 
     try:
-        result = crew.kickoff(inputs={"topic": topic, "content": content})
+        # Pass content as an input to CrewAI
+        result = crew.kickoff(inputs={"topic": topic, "research_findings": content})
 
         if not result:
             raise ValueError("CrewAI returned an empty response.")
@@ -153,6 +154,7 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
 
 
