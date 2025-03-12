@@ -38,48 +38,47 @@ if "file_path" not in st.session_state:
 with st.sidebar:
     st.header("Content Settings")
     topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
+    
+    # Upload file and store it in session state
     uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
     
+    if uploaded_file is not None:
+        os.makedirs("temp", exist_ok=True)
+        temp_file_path = os.path.join("temp", uploaded_file.name)
+        
+        # Save file
+        with open(temp_file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Store path in session state
+        st.session_state["file_path"] = temp_file_path
+
     st.markdown("-----")
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
 
 # Function to read file content
-def read_file_content(uploaded_file):
-    if uploaded_file is not None:
-        os.makedirs("temp", exist_ok=True)
-        temp_file_path = os.path.join("temp", uploaded_file.name)
-
-        # Cache file in session state
-        st.session_state["file_path"] = temp_file_path
-
-        with open(temp_file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-        try:
-            with open(temp_file_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-            if not content:
-                raise ValueError("File is empty.")
-            return content, temp_file_path
-        except Exception as e:
-            st.error(f"Error reading file: {str(e)}")
-            return None, None
-
-    return None, None
-
-# Function to generate content using CrewAI
-def generate_content(topic):
+def read_file_content():
     file_path = st.session_state.get("file_path", None)
 
     if not file_path or not os.path.exists(file_path):
-        st.error("No file provided. Please upload a file.")
+        st.error("No file provided. Please upload a file again.")
         return None, None
 
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
+        if not content:
+            raise ValueError("File is empty.")
+        return content, file_path
     except Exception as e:
         st.error(f"Error reading the file: {str(e)}")
+        return None, None
+
+# Function to generate content using CrewAI
+def generate_content(topic):
+    content, file_path = read_file_content()
+
+    if not content:
         return None, None
 
     researcher = Agent(
@@ -157,4 +156,5 @@ if generate_button:
 # Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
+
 
