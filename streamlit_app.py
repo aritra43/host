@@ -128,50 +128,7 @@ if generate_button:
 # ✅ Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
-orting_analyst],
-        tasks=[research_task, reporting_task],
-        process=Process.sequential,
-        verbose=True
-    )
 
-    try:
-        print(f"Passing to CrewAI: topic={topic}, content_length={len(content)}")
-
-        # ✅ Pass only `topic` since agents fetch content from the tool
-        result = crew.kickoff(inputs={"topic": topic})
-
-        if not result:
-            raise ValueError("CrewAI returned an empty response.")
-
-        result_text = str(result)
-        output_file_path = os.path.join("temp", "report.txt")
-
-        with open(output_file_path, "w", encoding="utf-8") as f:
-            f.write(result_text)
-
-        return result_text, output_file_path
-    except Exception as e:
-        st.error(f"Error during content generation: {str(e)}")
-        return None, None
-
-# ✅ Main Content Area
-if generate_button:
-    with st.spinner("Generating Content...This may take a moment..."):
-        try:
-            result, output_file_path = generate_content(topic)
-            if result:
-                st.markdown("### Generated Content")
-                st.markdown(result)
-                
-                with open(output_file_path, "rb") as f:
-                    st.download_button(label="Download Content", data=f.read(), file_name="article.txt", mime="text/plain")
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
-
-# Footer
-st.markdown("----")
-st.markdown("Built by AritraM")
-("Built by AritraM")
 
 
 
