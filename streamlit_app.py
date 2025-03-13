@@ -1,130 +1,143 @@
-import os
+__import__('pysqlite3')
 import sys
-import streamlit as st
-from crewai import Agent, Crew, Task, Process
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+from crewai import Agent
+# from tools import yt_tool
+# from dotenv import load_dotenv
+from crewai import LLM
+import litellm
+import openai
+import os
+from crewai import Agent, Crew, Process, Task
+from crewai.project import CrewBase, agent, crew, task
 from dotenv import load_dotenv
+from crewai_tools import FileReadTool, FileWriterTool
+import streamlit as st
 
-# ✅ Ensure Python uses the correct SQLite version
-try:
-    import pysqlite3
-    sys.modules["sqlite3"] = pysqlite3  # Force Python to use pysqlite3 instead of built-in sqlite3
-    import sqlite3
-    st.success(f"✅ Using SQLite version: {sqlite3.sqlite_version}")
-except ImportError:
-    st.warning("⚠️ pysqlite3 not found. Install it using: `pip install pysqlite3` if you face SQLite errors.")
-
-# ✅ Load environment variables
 load_dotenv()
 
-# ✅ Streamlit Page Configuration
-st.set_page_config(page_title="AI Educator", layout="wide")
+# Title
+st.set_page_config(page_title="EducatorAI", layout="wide")
 
-# ✅ Title and description
+# Title and description
 st.title("AI Educator Powered By CrewAI")
-st.markdown("Please provide a text file only.")
+st.markdown("Please provide a text file only")
 
-# ✅ Initialize session state
-if "file_content" not in st.session_state:
-    st.session_state["file_content"] = None
-
-# ✅ Sidebar for input options
+# Sidebar
 with st.sidebar:
     st.header("Content Settings")
-    topic = st.text_area("Enter the topic", height=68, placeholder="Enter the topic", key="text_area_1")
 
-    uploaded_file = st.file_uploader("Choose a file", type=["txt"])
+    topic = st.text_area(
+        "Enter the topic",
+        height=68,
+        placeholder="Enter the topic",
+        key="text_area_1"
+    )
 
-    if uploaded_file is not None:
-        file_content = uploaded_file.getvalue().decode("utf-8").strip()
-        if file_content:
-            st.session_state["file_content"] = file_content
-        else:
-            st.error("❌ The uploaded file is empty. Please upload a valid file.")
+    uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
 
     st.markdown("-----")
+
     generate_button = st.button("Generate Content", type="primary", use_container_width=True)
 
-# ✅ Function to generate content using CrewAI
-def generate_content(topic, content):
-    if not content:
-        st.error("❌ Unable to create the report. File content not provided.")
-        return None, None
+def generate_content(topic, uploaded_file, blog="default"):
+    if uploaded_file is not None:
+        # Create the temp directory if it does not exist
+        if not os.path.exists("temp"):
+            os.makedirs("temp")
 
-    # ✅ Define Agents
-    researcher = Agent(
-        role="Senior Data Researcher",
-        goal=f"Extract key information on {topic}",
-        description="Analyze file content and extract relevant data.",
-        backstory="A skilled researcher specializing in text analysis.",
-        verbose=True,
-        memory=True,
-        context={"content": content},
-        allow_delegation=True
-    )
+        # Save the uploaded file to a temporary location
+        temp_file_path = os.path.join("temp", uploaded_file.name)
+        with open(temp_file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-    reporting_analyst = Agent(
-        role="Reporting Analyst",
-        goal=f"Create a structured report on {topic}",
-        description="Format the extracted information into a structured document.",
-        backstory="An expert in compiling detailed reports.",
-        verbose=True,
-        memory=True,
-        context={"content": content},
-        allow_delegation=True
-    )
+        # Create a FileReadTool with the path to the uploaded file
+        file_read_tool = FileReadTool(file_path=temp_file_path)
 
-    # ✅ Define Tasks
-    research_task = Task(
-        description=f"Analyze and summarize key information about {topic}.",
-        expected_output=f"A structured summary of {topic}.",
-        agent=researcher
-    )
+        # Create a senior blog content researcher
+        researcher = Agent(
+            role='Senior Data Researcher',
+            goal='Uncover cutting-edge developments in {topic}',
+            description='Scrape the PDF documents to extract information related to {topic}.',
+            verbose=True,
+            memory=True,
+            backstory=(
+                "You're a seasoned researcher with a knack for uncovering the latest "
+                "developments in {topic}. Known for your ability to find the most relevant "
+                "information and present it in a clear and concise manner from the given file."
+            ),
+            allow_delegation=True,
+            tools=[file_read_tool]
+        )
 
-    reporting_task = Task(
-        description=f"Compile and format extracted data into a structured report.",
-        expected_output=f"A detailed markdown report on {topic}.",
-        agent=reporting_analyst
-    )
+        # Create a reporting analyst agent
+        reporting_analyst = Agent(
+            role='Reporting Analyst',
+            goal='Create detailed reports based on {topic} data analysis and research findings',
+            description='Write the scraped content from the researcher and display the findings in a report format.',
+            verbose=True,
+            memory=True,
+            backstory=(
+                "You're a meticulous analyst with a keen eye for detail. You're known for "
+                "your ability to turn complex data into clear and concise reports, making "
+                "it easy for others to understand and act on the information you provide."
+            ),
+            allow_delegation=True,
+            tools=[file_read_tool, FileWriterTool()]
+        )
 
-    # ✅ Create Crew and Execute Tasks
-    crew = Crew(
-        agents=[researcher, reporting_analyst],
-        tasks=[research_task, reporting_task],
-        process=Process.sequential,
-        verbose=True
-    )
+        research_task = Task(
+            description=(
+                "Scrape the content of the PDF and gather information about {topic}. "
+                "Ensure that you extract all relevant data and details."
+            ),
+            expected_output='A comprehensive list of extracted information about {topic}.',
+            agent=researcher,
+        )
 
-    try:
-        st.write("⏳ Processing... Please wait.")
-        result = crew.kickoff(inputs={"topic": topic})
+        reporting_task = Task(
+            description=(
+                "Write down the scraped content provided by the research specialist. "
+                "Ensure the report is well-organized and detailed."
+            ),
+            expected_output='A detailed report based on the extracted information, formatted as markdown.',
+            agent=reporting_analyst,
+            output_file='report.txt'
+        )
 
-        if not result:
-            raise ValueError("CrewAI returned an empty response.")
+        # Crew
+        crew = Crew(
+            agents=[researcher, reporting_analyst],
+            tasks=[research_task, reporting_task],
+            process=Process.sequential,
+            verbose=True,
+        )
 
-        result_text = str(result)
-        output_file_path = os.path.join("temp", "report.txt")
-        os.makedirs("temp", exist_ok=True)
+        return crew.kickoff(inputs={"topic": topic})
+    else:
+        st.error("Please upload a file to proceed.")
+        return None
 
-        with open(output_file_path, "w", encoding="utf-8") as f:
-            f.write(result_text)
-
-        return result_text, output_file_path
-    except Exception as e:
-        st.error(f"❌ Error during content generation: {str(e)}")
-        return None, None
-
-# ✅ Main Content Area
+# Main content area
 if generate_button:
-    file_content = st.session_state.get("file_content", None)
-    with st.spinner("🚀 Generating Content...This may take a moment..."):
-        result, output_file_path = generate_content(topic, file_content)
-        if result:
-            st.markdown("### 📄 Generated Content")
-            st.markdown(result)
+    with st.spinner("Generating Content...This may take a moment.."):
+        try:
+            result = generate_content(topic, uploaded_file)
+            if result:
+                st.markdown("### Generated Content")
+                st.markdown(result)
 
-            with open(output_file_path, "rb") as f:
-                st.download_button(label="📥 Download Report", data=f.read(), file_name="report.txt", mime="text/plain")
+                # Add download button
+                st.download_button(
+                    label="Download Content",
+                    data=result.raw,
+                    file_name=f"article.txt",
+                    mime="text/plain"
+                )
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
 
-# ✅ Footer
+# Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
