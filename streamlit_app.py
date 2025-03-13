@@ -21,7 +21,7 @@ load_dotenv()
 st.set_page_config(page_title="EducatorAI", layout="wide")
 
 # Title and description
-st.title("AI Educator Powered By CrewAI")
+st.title("EducatorAI")
 st.markdown("Please provide a text file only")
 
 # Sidebar
