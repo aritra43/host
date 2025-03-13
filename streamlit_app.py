@@ -1,6 +1,5 @@
 import os
 import sys
-import sqlite3
 import streamlit as st
 from crewai import Agent, Crew, Task, Process
 from dotenv import load_dotenv
@@ -8,10 +7,11 @@ from dotenv import load_dotenv
 # ✅ Ensure Python uses the correct SQLite version
 try:
     import pysqlite3
-    sys.modules["sqlite3"] = pysqlite3
+    sys.modules["sqlite3"] = pysqlite3  # Force Python to use pysqlite3 instead of built-in sqlite3
+    import sqlite3
     st.success(f"✅ Using SQLite version: {sqlite3.sqlite_version}")
 except ImportError:
-    st.warning("⚠️ pysqlite3 not found. If you face SQLite errors, install it using: `pip install pysqlite3`")
+    st.warning("⚠️ pysqlite3 not found. Install it using: `pip install pysqlite3` if you face SQLite errors.")
 
 # ✅ Load environment variables
 load_dotenv()
@@ -128,15 +128,3 @@ if generate_button:
 # ✅ Footer
 st.markdown("----")
 st.markdown("Built by AritraM")
-
-
-
-
-
-
-
-
-
-
-
-
